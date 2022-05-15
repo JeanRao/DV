@@ -1,0 +1,89 @@
+---
+title: "Exercise 1"
+description: |
+  Take the data from VAST challenge, used the data collected from volunteers to evaluate the city's demographics.
+---
+
+In this exercise, I take the data from VAST challenge, used the data collected from volunteers to evaluate the city's demographics.
+
+```{r setup, include=FALSE,cache=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+packages = c('tidyverse','ggdist','ggridges','patchwork','ggthemes',
+             'hrbrthemes','ggrepel','ggforce')
+for(p in packages)
+  {if(!require(p, character.only = T))
+    {install.packages(p)
+    }
+  library(p, character.only = T)
+  }
+```
+
+```{r include=FALSE,echo=FALSE}
+df<-read_csv('data/Participants.csv')#use underscore 
+```
+
+
+## Demographics
+
+### Overall view of the 5 demographical features  
+
+```{r, echo=FALSE}
+p1<-ggplot(data=df,aes(x=householdSize,fill=haveKids))+geom_bar(colour='black')+ggtitle('Distribution of household size')
+p2<-ggplot(data=df,aes(x=haveKids))+geom_bar(colour='black',fill='lightblue')+ggtitle('Distribution of family with Kids')
+dfk<-df[,-3]
+p3<-ggplot(data=df,aes(x=age,fill=haveKids))+geom_histogram(data=dfk,fill='grey',alpha=0.5,binwidth=5)+ geom_histogram(binwidth = 5,colour='black')+facet_wrap(~haveKids)+ggtitle('Distribution of age')+theme_bw()
+
+p4<-ggplot(data=df,aes(educationLevel,fill=haveKids))+coord_flip()+geom_bar(data=dfk,fill="grey",alpha=0.5)+geom_bar(colour='black')+facet_grid(cols=vars(haveKids)) +ggtitle('Distribution of Educational Level')+theme_bw()
+
+p5<-ggplot(data=df,aes(interestGroup))+geom_bar(colour='black',fill='lightblue')+ggtitle('Distribution of interest group')
+p6<-ggplot(data=df,aes(joviality))+geom_density()+ggtitle('Overall Density of Joviality')
+p1+p2
+p3
+p4
+p5+p6
+```
+\
+From the graphs we have following findings:\
+1. Households of size 3 always have kids, household with kids is always of size 3, which cannot be normal.\
+2. The distribution of age is quite even, the proportion of youngsters is big and healthy.\
+3. Majority of volunteer have high school or college education level.\
+4. Distribution of interest group is quite even.\
+
+### Detailed view of democraphical features
+
+```{r,echo=FALSE}
+ggplot(data=df,aes(x=age))+
+  geom_density()+
+  facet_wrap(~interestGroup)+
+  ggtitle('Distribution of interests over age groups')+
+  labs(y='Density of interset')
+
+ggplot(data=df,aes(x=age,colour=haveKids))+
+  geom_density()+
+  facet_wrap(~interestGroup)+
+  ggtitle('Distribution of interests over age groups and kids')+
+  labs(y='Density of interset')
+
+ggplot(data=df,
+       aes(x= age, y=joviality)) +
+    geom_point(size=0.3)+ggtitle('Joviality and age')
+
+ggplot(data=df,aes(x=haveKids,y=joviality))+geom_violin(fill="lightblue")+geom_boxplot(alpha=0.5)+
+  ggtitle('Joviality and kids')
+
+ggplot(data=df,aes(x=interestGroup,y=joviality,fill=haveKids))+geom_violin()+geom_boxplot(alpha=0.5)+
+  facet_grid(~haveKids)+
+  ggtitle('Joviality for different interest groups')
+
+ggplot(data=df,aes(x=educationLevel,y=joviality,fill=haveKids))+geom_violin()+geom_boxplot(alpha=0.5)+facet_grid(rows=vars(haveKids))+ggtitle('Joviality for different education level')
+
+```
+
+\
+From the graphs we have following findings:\
+1. The distribution of interest varies for different age groups, it also changes with regards of the presence of kids.\
+2. People with kids have slightly higher joviality level compared with those who don't.\
+3. People from interest group and with kids have the highest average joviality level.\
+4. People with low education level and no kids have the lowest joviality level.\
+5. There is no relationship between joviality and age.\
+

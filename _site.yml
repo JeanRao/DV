@@ -9,4 +9,8 @@ navbar:
       href: index.html
     - text: "About"
       href: about.html
+    - text: "TakeHome Exercise"
+      menu:
+        - text: "TakeHome Exercise 3"
+          href: th_ex/th3.html
 output: distill::distill_article

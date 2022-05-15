@@ -1,0 +1,113 @@
+---
+title: "Economic Analysis"
+author: "Ningzhen"
+date: '2022-05-14'
+description: |
+  With reference to Challenge 3 of VAST Challenge 2022, I aim to reveal the economic of the city of Engagement, Ohio USA by using appropriate static and interactive statistical graphics methods. How does the financial health of the residents change over the period covered by the dataset? How do wages compare to the overall cost of living in Engagement? Are there groups that appear to exhibit similar patterns? 
+output: html_document
+---
+## Introduction
+With reference to Challenge 3 of VAST Challenge 2022, I aim to reveal the economic of the city of Engagement, Ohio USA by using appropriate static and interactive statistical graphics methods. How does the financial health of the residents change over the period covered by the dataset? How do wages compare to the overall cost of living in Engagement? Are there groups that appear to exhibit similar patterns? 
+
+\ load the required libraries
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+packages = c('ggiraph','plotly','DT','patchwork','gganimate','tidyverse',
+             'readxl','gifski','gapminder','scales', 'viridis', 'ggdist',
+             'lubridate', 'ggthemes', 
+             'gridExtra',   'knitr',
+             'data.table', 'ViSiElse','zoo',
+             'treemap', 'treemapify',
+             'rPackedBar')
+for(p in packages)
+  {if(!require(p, character.only = T))
+    {install.packages(p)
+    }
+  library(p, character.only = T)
+  }
+```
+
+\ understanding the financial health of the participants, we mainly refer to the financial journal table, by plotting the participants' savings and spending in each month.
+```{r}
+spend<-read_csv('data/FinancialJournal.csv')
+spend<-spend%>% mutate(date= as.yearmon(spend$timestamp, "%Y %m"),year=year(spend$timestamp),mon=month(spend$timestamp))
+tail(spend)
+spend_cat<-spend%>% group_by(category,date)%>% summarise(total=sum(amount))
+spend_cat
+p<-ggplot(spend_cat,aes(x=date,y=total,color=category))+geom_line()
+ggplotly(p)
+wage<-spend_cat %>% filter(category=='Wage')
+ggplot(wage, aes(x=date,y=total))+geom_line()
+```
+
+\ To inspect the spending pattern more clearly, we should plot the pattern of each kind of spending of the total income for each participant
+```{r}
+#total income of the month
+#group by participants and mon_year, extract the wage and rentagjustment
+income_mon<-spend%>% group_by(participantId,date)%>% filter(category %in% c('Wage','RentAdjustment')) %>% summarize(income=sum(amount))
+ggplot(data=income_mon,aes(x=date,y=income))+geom_dots()
+
+#similarly, compute the 4 kinds of spending and merge the tables together
+spend_mon<-spend%>% filter(category %in% c('Education','Food','Shelter','Recreation'))
+spend_edu=spend_mon%>% group_by(participantId,date)%>% filter(category=='Education') %>% summarize(edu=sum(amount))
+
+spend_food=spend_mon%>% group_by(participantId,date)%>% filter(category=='Food') %>% summarize(food=sum(amount))
+
+spend_rec=spend_mon%>% group_by(participantId,date)%>% filter(category=='Recreation') %>% summarize(rec=sum(amount))
+
+spend_shel=spend_mon%>% group_by(participantId,date)%>% filter(category=='Shelter') %>% summarize(shel=sum(amount))
+spend_mon=inner_join(x=income_mon,y=spend_edu, by=c('participantId'
+,'date'))
+spend_mon=inner_join(x=spend_mon,y=spend_food, by=c('participantId'
+,'date'))
+spend_mon=inner_join(x=spend_mon,y=spend_rec, by=c('participantId'
+,'date'))
+spend_mon=inner_join(x=spend_mon,y=spend_shel, by=c('participantId'
+,'date'))
+
+```
+
+\ plot the total earnings over the period of each people
+
+```{r}
+spend
+spend_per<-spend%>% group_by(participantId)%>% summarise(earn=sum(amount))
+spend_per%>% ggplot()+geom_histogram_interactive(aes(x=earn))
+spend_per
+```
+
+```{r}
+spend_per$tooltip <- c(paste0(
+  "ID = ", spend_per$participantId,
+  "earn = ", spend_per$earn))
+p <- ggplot(data=spend_per,aes(x=earn)) +
+  geom_dotplot_interactive(
+    aes(tooltip = spend_per$toolip),
+    stackgroups = TRUE, 
+    binwidth = 1500, 
+    method = "histodot") +
+  scale_y_continuous(NULL, 
+                     breaks = NULL)
+girafe(
+  ggobj = p,
+  width_svg = 10,
+  height_svg = 10*0.618,
+
+)
+```
+\ I encountered some issue that my girafe cannot show toolip while hovered at the point
+
+\ plot how many people each employers hire during the period
+
+```{r}
+job<-read_csv('data/jobs.csv')
+head(job)
+max(job$jobId)
+#1327 jobs in total
+p1<-job %>% group_by(employerId)%>% summarise(njob=n())%>%transform(njob=as.character(njob))%>% ggplot(aes(x=njob))+geom_bar()+ggtitle('Number of jobs posted by employers from 2021 to 2022')+
+  labs(y='count of employers',x='number of jobs')
+ggplotly(p1)
+```
+
+
